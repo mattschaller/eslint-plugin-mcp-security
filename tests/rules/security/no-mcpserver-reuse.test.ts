@@ -11,11 +11,11 @@ const ruleTester = new RuleTester({
 
 ruleTester.run('no-mcpserver-reuse', rule, {
   valid: [
-    // McpServer at top level — correct pattern
+    // McpServer at top level — correct singleton pattern
     {
       code: `const server = new McpServer({ name: "test", version: "1.0.0" });`,
     },
-    // McpServer inside a main() function — common init pattern, not a handler
+    // McpServer inside a main() function — common init pattern
     {
       code: `async function main() {
         const server = new McpServer({ name: "test", version: "1.0.0" });
@@ -54,42 +54,95 @@ ruleTester.run('no-mcpserver-reuse', rule, {
         server.connect(transport);
       `,
     },
-  ],
-  invalid: [
-    // McpServer inside Express GET handler
-    {
-      code: `app.get("/mcp", (req, res) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
-      })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
-    },
-    // McpServer inside Express POST handler
+    // Per-request McpServer + connect in handler — correct CVE-2026-25536 fix
     {
       code: `app.post("/mcp", (req, res) => {
         const server = new McpServer({ name: "test", version: "1.0.0" });
+        const transport = new StreamableHTTPServerTransport({ sessionId: req.id });
+        server.connect(transport);
       })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
     },
-    // McpServer inside Express middleware
-    {
-      code: `app.use("/mcp", (req, res, next) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
-      })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
-    },
-    // McpServer inside http.createServer
+    // Per-request McpServer in http.createServer — also correct
     {
       code: `http.createServer((req, res) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
+        const mcpServer = new McpServer({ name: "test", version: "1.0.0" });
+        mcpServer.connect(new StreamableHTTPServerTransport({}));
       })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
     },
-    // McpServer inside server.on('request')
+    // Per-request McpServer in Express middleware
     {
-      code: `httpServer.on("request", (req, res) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
+      code: `app.use("/mcp", (req, res, next) => {
+        const srv = new McpServer({ name: "test", version: "1.0.0" });
+        srv.connect(transport);
       })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
+    },
+    // .connect() on a non-McpServer object in handler (not tracked)
+    {
+      code: `app.post("/mcp", (req, res) => {
+        db.connect();
+      })`,
+    },
+  ],
+  invalid: [
+    // Module-scope server.connect() inside Express POST handler (CVE-2026-25536)
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        app.post("/mcp", (req, res) => {
+          server.connect(new SSEServerTransport("/messages", res));
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // Module-scope server.connect() inside Express GET handler
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        app.get("/mcp", (req, res) => {
+          server.connect(transport);
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // Module-scope server.connect() inside http.createServer
+    {
+      code: `
+        const mcpServer = new McpServer({ name: "test", version: "1.0.0" });
+        http.createServer((req, res) => {
+          mcpServer.connect(transport);
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // Module-scope server.connect() inside server.on('request')
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        httpServer.on("request", (req, res) => {
+          server.connect(transport);
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // Module-scope server.connect() inside Express middleware
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        app.use("/mcp", (req, res, next) => {
+          server.connect(transport);
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // Module-scope server.connect() inside router.put
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        router.put("/mcp/:id", (req, res) => {
+          server.connect(transport);
+        })
+      `,
+      errors: [{ messageId: 'connectInHandler' }],
     },
     // McpServer inside a for loop
     {
@@ -119,48 +172,14 @@ ruleTester.run('no-mcpserver-reuse', rule, {
       } while (shouldRetry)`,
       errors: [{ messageId: 'mcpServerInLoop' }],
     },
-    // McpServer inside Express handler as FunctionExpression
+    // FunctionExpression handler — module-scope reuse
     {
-      code: `app.get("/mcp", async function(req, res) {
+      code: `
         const server = new McpServer({ name: "test", version: "1.0.0" });
-      })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
-    },
-    // McpServer inside router.put handler
-    {
-      code: `router.put("/mcp/:id", (req, res) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
-      })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
-    },
-    // McpServer inside router.delete handler
-    {
-      code: `router.delete("/mcp/:id", (req, res) => {
-        const server = new McpServer({ name: "test", version: "1.0.0" });
-      })`,
-      errors: [{ messageId: 'mcpServerInHandler' }],
-    },
-    // Loop inside a handler — loop takes priority
-    {
-      code: `app.get("/mcp", (req, res) => {
-        for (const id of req.body.ids) {
-          const server = new McpServer({ name: id, version: "1.0.0" });
-        }
-      })`,
-      errors: [{ messageId: 'mcpServerInLoop' }],
-    },
-    // NEW: .connect() inside a request handler
-    {
-      code: `app.post("/mcp", (req, res) => {
-        server.connect(new SSEServerTransport("/messages", res));
-      })`,
-      errors: [{ messageId: 'connectInHandler' }],
-    },
-    // NEW: .connect() inside http.createServer
-    {
-      code: `http.createServer((req, res) => {
-        mcpServer.connect(transport);
-      })`,
+        app.get("/mcp", async function(req, res) {
+          server.connect(transport);
+        })
+      `,
       errors: [{ messageId: 'connectInHandler' }],
     },
   ],

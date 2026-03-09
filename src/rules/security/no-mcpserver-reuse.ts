@@ -18,7 +18,7 @@ const HTTP_HANDLER_METHODS = new Set([
   'createServer',
 ]);
 
-type MessageIds = 'mcpServerInLoop' | 'mcpServerInHandler' | 'connectInHandler';
+type MessageIds = 'mcpServerInLoop' | 'connectInHandler';
 
 export default createRule<[], MessageIds>({
   name: 'no-mcpserver-reuse',
@@ -26,19 +26,17 @@ export default createRule<[], MessageIds>({
     type: 'problem',
     docs: {
       description:
-        'Disallow McpServer instantiation inside request handlers or loops to prevent lifecycle issues (CVE-2026-25536)',
+        'Disallow reusing a module-scope McpServer inside request handlers (CVE-2026-25536) and instantiation in loops',
     },
     messages: {
       mcpServerInLoop:
         'new McpServer() inside a loop creates a new server instance per iteration, ' +
-        'risking resource exhaustion and state confusion (CVE-2026-25536). ' +
-        'Instantiate McpServer once at module level.',
-      mcpServerInHandler:
-        'new McpServer() inside a request handler creates a new server instance per request ' +
-        '(CVE-2026-25536). Instantiate McpServer once at module level and manage transports per-request instead.',
+        'risking resource exhaustion and state confusion. ' +
+        'Instantiate McpServer once or use a factory function.',
       connectInHandler:
-        '.connect() inside a request handler re-connects the MCP server per request ' +
-        '(CVE-2026-25536). Connect once at module level and manage transports per-request instead.',
+        '.connect() called on a module-scope McpServer inside a request handler. ' +
+        'Reusing a single McpServer across requests causes cross-client data leaks (CVE-2026-25536). ' +
+        'Create a new McpServer per request instead.',
     },
     schema: [],
   },
@@ -47,6 +45,10 @@ export default createRule<[], MessageIds>({
     const httpHandlerNodes = new Set<TSESTree.Node>();
     let insideHttpHandler = 0;
     let insideLoop = 0;
+    // Module-scope McpServer variable names (e.g., `const server = new McpServer(...)`)
+    const moduleScopeMcpServers = new Set<string>();
+    // Stack of sets: McpServer variable names created in each handler scope
+    const handlerLocalMcpServers: Set<string>[] = [];
 
     function getLastFunctionArg(
       node: TSESTree.CallExpression,
@@ -96,9 +98,42 @@ export default createRule<[], MessageIds>({
       );
     }
 
+    function getConnectObjectName(node: TSESTree.CallExpression): string | null {
+      if (
+        node.callee.type === AST_NODE_TYPES.MemberExpression &&
+        node.callee.object.type === AST_NODE_TYPES.Identifier
+      ) {
+        return node.callee.object.name;
+      }
+      return null;
+    }
+
+    function isLocalMcpServer(name: string): boolean {
+      for (let i = handlerLocalMcpServers.length - 1; i >= 0; i--) {
+        if (handlerLocalMcpServers[i].has(name)) return true;
+      }
+      return false;
+    }
+
+    function trackMcpServerAssignment(node: TSESTree.NewExpression): void {
+      if (handlerLocalMcpServers.length === 0) return;
+
+      const parent = node.parent;
+      if (!parent) return;
+
+      // const server = new McpServer(...)
+      if (
+        parent.type === AST_NODE_TYPES.VariableDeclarator &&
+        parent.id.type === AST_NODE_TYPES.Identifier
+      ) {
+        handlerLocalMcpServers[handlerLocalMcpServers.length - 1].add(parent.id.name);
+      }
+    }
+
     const enterFn = (node: TSESTree.Node): void => {
       if (httpHandlerNodes.has(node)) {
         insideHttpHandler++;
+        handlerLocalMcpServers.push(new Set());
       }
     };
 
@@ -106,6 +141,7 @@ export default createRule<[], MessageIds>({
       if (httpHandlerNodes.has(node)) {
         insideHttpHandler--;
         httpHandlerNodes.delete(node);
+        handlerLocalMcpServers.pop();
       }
     };
 
@@ -118,9 +154,18 @@ export default createRule<[], MessageIds>({
           }
         }
 
-        // Flag .connect() calls inside HTTP handlers
+        // Flag .connect() on module-scope McpServer inside HTTP handlers
         if (insideHttpHandler > 0 && isConnectCall(node)) {
-          context.report({ node, messageId: 'connectInHandler' });
+          const objectName = getConnectObjectName(node);
+          // Only flag when the object is a known module-scope McpServer
+          // and NOT locally created in this handler
+          if (
+            objectName &&
+            moduleScopeMcpServers.has(objectName) &&
+            !isLocalMcpServer(objectName)
+          ) {
+            context.report({ node, messageId: 'connectInHandler' });
+          }
         }
       },
       NewExpression(node) {
@@ -130,7 +175,18 @@ export default createRule<[], MessageIds>({
         if (insideLoop > 0) {
           context.report({ node, messageId: 'mcpServerInLoop' });
         } else if (insideHttpHandler > 0) {
-          context.report({ node, messageId: 'mcpServerInHandler' });
+          // Per-request McpServer is the correct pattern — track it, don't flag it
+          trackMcpServerAssignment(node);
+        } else {
+          // Module-scope McpServer — track the variable name for .connect() checks
+          const parent = node.parent;
+          if (
+            parent &&
+            parent.type === AST_NODE_TYPES.VariableDeclarator &&
+            parent.id.type === AST_NODE_TYPES.Identifier
+          ) {
+            moduleScopeMcpServers.add(parent.id.name);
+          }
         }
       },
       ArrowFunctionExpression: enterFn,

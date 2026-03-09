@@ -61,14 +61,12 @@ server.tool("shutdown", "Shutdown server", { confirm: z.boolean() }, async (para
   process.exit(0);
 });
 
-// CVE-2026-25536: McpServer in request handler
+// CVE-2026-25536: module-scope McpServer reused across requests
 import express from "express";
 const app = express();
 app.post("/mcp", (req, res) => {
-  // no-mcpserver-reuse: per-request instantiation
-  const perRequestServer = new McpServer({ name: "bad", version: "1.0.0" });
-  // no-mcpserver-reuse: connect in handler
-  perRequestServer.connect(transport);
+  // no-mcpserver-reuse: .connect() on module-scope server causes cross-client data leak
+  server.connect(new SSEServerTransport("/messages", res));
 });
 
 // no-path-traversal-in-resources: fs in .resource() handler
