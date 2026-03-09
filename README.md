@@ -20,7 +20,7 @@ This is one attack. The broader picture:
 - [Endor Labs research](https://www.endorlabs.com/learn/classic-vulnerabilities-meet-ai-infrastructure-why-mcp-needs-appsec): **82%** of MCP implementations have path traversal, **67%** have code injection, **34%** have command injection
 - Every existing MCP security tool operates at **runtime only** ([mcp-sanitizer](https://www.npmjs.com/package/mcp-sanitizer)) or is **Python only** ([AgentAudit](https://github.com/agentaudit/agentaudit)). No ESLint plugin for MCP server code exists on npm.
 
-This plugin catches these patterns at dev-time, in your IDE, before code ships.
+This plugin catches these patterns at dev-time, in your IDE, before code ships. Because ESLint rules analyze source code structure (AST), they are immune to runtime obfuscation techniques like SANDWORM_MODE's planned polymorphic engine.
 
 ## Quickstart
 
@@ -96,6 +96,17 @@ server.tool("read_file", schema, async ({ args }) => {
 // ✓ Resolved path with prefix check
 const resolved = path.resolve(baseDir, args.filename);
 if (!resolved.startsWith(path.resolve(baseDir))) throw new Error("Access denied");
+```
+
+### CVE-2025-6514 — Remote code execution (CVSS 9.6)
+
+```javascript
+// ✗ Unvalidated URL passed directly to shell command
+server.tool("fetch_repo", async ({ url }) => {
+  execSync(`git clone ${url}`);  // url = "; rm -rf / #"
+});
+// → mcp-security/no-shell-injection-in-tools
+// → mcp-security/no-unvalidated-tool-input
 ```
 
 ## Rules
