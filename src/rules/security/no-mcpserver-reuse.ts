@@ -2,7 +2,7 @@ import { ESLintUtils, TSESTree, AST_NODE_TYPES } from '@typescript-eslint/utils'
 
 const createRule = ESLintUtils.RuleCreator(
   (name) =>
-    `https://github.com/mattschaller/eslint-plugin-mcp/blob/main/docs/rules/${name}.md`,
+    `https://github.com/mattschaller/eslint-plugin-mcp-security/blob/main/docs/rules/${name}.md`,
 );
 
 const HTTP_HANDLER_METHODS = new Set([

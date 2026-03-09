@@ -12,7 +12,7 @@ type Plugin = TSESLint.FlatConfig.Plugin & {
 
 const plugin: Plugin = {
   meta: {
-    name: 'eslint-plugin-mcp',
+    name: 'eslint-plugin-mcp-security',
     version: '0.1.0',
   },
   rules: {
@@ -27,14 +27,14 @@ const plugin: Plugin = {
 
 plugin.configs.recommended = {
   plugins: {
-    mcp: plugin,
+    'mcp-security': plugin,
   },
   rules: {
-    'mcp/no-credential-pattern-in-description': 'error',
-    'mcp/no-exec-with-external-input': 'error',
-    'mcp/no-path-traversal-in-handler': 'error',
-    'mcp/no-eval-in-handler': 'error',
-    'mcp/no-mcpserver-reuse': 'error',
+    'mcp-security/no-credential-pattern-in-description': 'error',
+    'mcp-security/no-exec-with-external-input': 'error',
+    'mcp-security/no-path-traversal-in-handler': 'error',
+    'mcp-security/no-eval-in-handler': 'error',
+    'mcp-security/no-mcpserver-reuse': 'error',
   },
 };
 
