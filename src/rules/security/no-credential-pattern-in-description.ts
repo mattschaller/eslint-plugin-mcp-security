@@ -7,7 +7,7 @@ import {
 
 const createRule = ESLintUtils.RuleCreator(
   (name) =>
-    `https://github.com/mattdanielbrown/eslint-plugin-mcp/blob/main/docs/rules/${name}.md`,
+    `https://github.com/mattschaller/eslint-plugin-mcp/blob/main/docs/rules/${name}.md`,
 );
 
 const CREDENTIAL_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
