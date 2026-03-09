@@ -31,12 +31,12 @@ That's it. All security rules are enabled at `error` severity.
 | Rule | What it catches | Severity |
 |------|----------------|----------|
 | [`no-credential-pattern-in-description`](docs/rules/no-credential-pattern-in-description.md) | Tool descriptions referencing `~/.ssh`, `~/.aws`, `.env`, and other credential paths — the exact pattern used by SANDWORM_MODE/McpInject to trick AI agents into exfiltrating secrets | error |
+| [`no-exec-with-external-input`](docs/rules/no-exec-with-external-input.md) | `exec`, `execSync`, `spawn`, and other shell execution functions inside `.tool()` handlers — the CVE-2025-6514 pattern (mcp-remote RCE via unvalidated input to `execSync`) | error |
 
 ### Roadmap (v1)
 
 | Rule | CVE / CWE |
 |------|-----------|
-| `no-exec-with-external-input` | CVE-2025-6514, CWE-78 |
 | `no-path-traversal-in-handler` | CWE-22 |
 | `no-eval-in-handler` | CWE-94 |
 | `no-mcpserver-reuse` | CVE-2026-25536 |

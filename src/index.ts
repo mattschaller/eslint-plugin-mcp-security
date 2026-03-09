@@ -1,4 +1,5 @@
 import noCredentialPatternInDescription from './rules/security/no-credential-pattern-in-description.js';
+import noExecWithExternalInput from './rules/security/no-exec-with-external-input.js';
 
 import type { TSESLint } from '@typescript-eslint/utils';
 
@@ -13,6 +14,7 @@ const plugin: Plugin = {
   },
   rules: {
     'no-credential-pattern-in-description': noCredentialPatternInDescription,
+    'no-exec-with-external-input': noExecWithExternalInput,
   },
   configs: {},
 };
@@ -23,6 +25,7 @@ plugin.configs.recommended = {
   },
   rules: {
     'mcp/no-credential-pattern-in-description': 'error',
+    'mcp/no-exec-with-external-input': 'error',
   },
 };
 
