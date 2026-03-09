@@ -1,17 +1,15 @@
 name: Release
 
 on:
-  push:
-    tags:
-      - 'v*'
-
-permissions:
-  contents: write
-  id-token: write
+  release:
+    types: [published]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -23,7 +21,3 @@ jobs:
       - run: npm run build
       - run: npm test
       - run: npm publish --provenance --access public
-      - name: Create GitHub Release
-        run: gh release create "${{ github.ref_name }}" --generate-notes
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
