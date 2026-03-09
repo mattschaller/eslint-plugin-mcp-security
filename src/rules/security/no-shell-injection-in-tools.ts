@@ -1,22 +1,15 @@
-import { ESLintUtils, TSESTree, AST_NODE_TYPES } from '@typescript-eslint/utils';
+import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
 import {
   isToolMethodCall,
   getToolHandlerNode,
+  getCalleeName,
 } from '../../utils/mcp-ast-helpers.js';
+import { SHELL_FUNCTIONS } from '../../utils/patterns.js';
 
 const createRule = ESLintUtils.RuleCreator(
   (name) =>
     `https://github.com/mattschaller/eslint-plugin-mcp-security/blob/main/docs/rules/${name}.md`,
 );
-
-const DANGEROUS_FUNCTIONS = new Set([
-  'exec',
-  'execSync',
-  'execFile',
-  'execFileSync',
-  'spawn',
-  'spawnSync',
-]);
 
 type MessageIds = 'execInHandler';
 
@@ -27,7 +20,7 @@ type Options = [
 ];
 
 export default createRule<Options, MessageIds>({
-  name: 'no-exec-with-external-input',
+  name: 'no-shell-injection-in-tools',
   meta: {
     type: 'problem',
     docs: {
@@ -63,24 +56,9 @@ export default createRule<Options, MessageIds>({
 
     const options = context.options[0] ?? {};
     const dangerousFns = new Set([
-      ...DANGEROUS_FUNCTIONS,
+      ...SHELL_FUNCTIONS,
       ...(options.additionalFunctions ?? []),
     ]);
-
-    function getCalleeName(node: TSESTree.CallExpression): string | null {
-      // Direct call: execSync(...)
-      if (node.callee.type === AST_NODE_TYPES.Identifier) {
-        return node.callee.name;
-      }
-      // Member expression: cp.execSync(...), child_process.spawn(...)
-      if (
-        node.callee.type === AST_NODE_TYPES.MemberExpression &&
-        node.callee.property.type === AST_NODE_TYPES.Identifier
-      ) {
-        return node.callee.property.name;
-      }
-      return null;
-    }
 
     const enterHandler = (node: TSESTree.Node): void => {
       if (toolHandlerNodes.has(node)) {

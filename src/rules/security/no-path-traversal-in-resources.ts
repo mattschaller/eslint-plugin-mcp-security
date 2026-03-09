@@ -1,54 +1,15 @@
-import { ESLintUtils, TSESTree, AST_NODE_TYPES } from '@typescript-eslint/utils';
+import { ESLintUtils, TSESTree } from '@typescript-eslint/utils';
 import {
-  isToolMethodCall,
+  isToolOrResourceMethodCall,
   getToolHandlerNode,
+  getCalleeName,
 } from '../../utils/mcp-ast-helpers.js';
+import { FS_FUNCTIONS } from '../../utils/patterns.js';
 
 const createRule = ESLintUtils.RuleCreator(
   (name) =>
     `https://github.com/mattschaller/eslint-plugin-mcp-security/blob/main/docs/rules/${name}.md`,
 );
-
-const FS_FUNCTIONS = new Set([
-  // Reading
-  'readFile',
-  'readFileSync',
-  'createReadStream',
-  // Writing
-  'writeFile',
-  'writeFileSync',
-  'createWriteStream',
-  'appendFile',
-  'appendFileSync',
-  // Deletion
-  'unlink',
-  'unlinkSync',
-  'rm',
-  'rmSync',
-  'rmdir',
-  'rmdirSync',
-  // Directory listing
-  'readdir',
-  'readdirSync',
-  // File manipulation
-  'rename',
-  'renameSync',
-  'copyFile',
-  'copyFileSync',
-  // Opening files
-  'open',
-  'openSync',
-  // Metadata (information disclosure)
-  'stat',
-  'statSync',
-  'lstat',
-  'lstatSync',
-  // Permissions
-  'chmod',
-  'chmodSync',
-  'chown',
-  'chownSync',
-]);
 
 type MessageIds = 'fsInHandler';
 
@@ -59,16 +20,16 @@ type Options = [
 ];
 
 export default createRule<Options, MessageIds>({
-  name: 'no-path-traversal-in-handler',
+  name: 'no-path-traversal-in-resources',
   meta: {
     type: 'problem',
     docs: {
       description:
-        'Disallow filesystem operations inside MCP tool handlers to prevent path traversal attacks (CWE-22)',
+        'Disallow filesystem operations inside MCP tool and resource handlers to prevent path traversal attacks (CWE-22)',
     },
     messages: {
       fsInHandler:
-        'Filesystem function "{{name}}" inside an MCP tool handler. ' +
+        'Filesystem function "{{name}}" inside an MCP tool/resource handler. ' +
         'Tool parameters containing "../" sequences enable path traversal (CWE-22). ' +
         '82% of MCP server implementations are vulnerable (Endor Labs). ' +
         'Validate paths with path.resolve() and verify they stay within an allowed directory.',
@@ -90,8 +51,8 @@ export default createRule<Options, MessageIds>({
   },
   defaultOptions: [{}],
   create(context) {
-    const toolHandlerNodes = new Set<TSESTree.Node>();
-    let insideToolHandler = 0;
+    const handlerNodes = new Set<TSESTree.Node>();
+    let insideHandler = 0;
 
     const options = context.options[0] ?? {};
     const dangerousFns = new Set([
@@ -99,42 +60,29 @@ export default createRule<Options, MessageIds>({
       ...(options.additionalFunctions ?? []),
     ]);
 
-    function getCalleeName(node: TSESTree.CallExpression): string | null {
-      if (node.callee.type === AST_NODE_TYPES.Identifier) {
-        return node.callee.name;
-      }
-      if (
-        node.callee.type === AST_NODE_TYPES.MemberExpression &&
-        node.callee.property.type === AST_NODE_TYPES.Identifier
-      ) {
-        return node.callee.property.name;
-      }
-      return null;
-    }
-
     const enterHandler = (node: TSESTree.Node): void => {
-      if (toolHandlerNodes.has(node)) {
-        insideToolHandler++;
+      if (handlerNodes.has(node)) {
+        insideHandler++;
       }
     };
 
     const exitHandler = (node: TSESTree.Node): void => {
-      if (toolHandlerNodes.has(node)) {
-        insideToolHandler--;
-        toolHandlerNodes.delete(node);
+      if (handlerNodes.has(node)) {
+        insideHandler--;
+        handlerNodes.delete(node);
       }
     };
 
     return {
       CallExpression(node) {
-        if (isToolMethodCall(node)) {
+        if (isToolOrResourceMethodCall(node)) {
           const handler = getToolHandlerNode(node);
           if (handler) {
-            toolHandlerNodes.add(handler);
+            handlerNodes.add(handler);
           }
         }
 
-        if (insideToolHandler > 0) {
+        if (insideHandler > 0) {
           const name = getCalleeName(node);
           if (name && dangerousFns.has(name)) {
             context.report({

@@ -47,6 +47,13 @@ ruleTester.run('no-mcpserver-reuse', rule, {
         const server = new McpServer({ name: "test", version: "1.0.0" });
       };`,
     },
+    // .connect() at module level — correct pattern
+    {
+      code: `
+        const server = new McpServer({ name: "test", version: "1.0.0" });
+        server.connect(transport);
+      `,
+    },
   ],
   invalid: [
     // McpServer inside Express GET handler
@@ -141,6 +148,20 @@ ruleTester.run('no-mcpserver-reuse', rule, {
         }
       })`,
       errors: [{ messageId: 'mcpServerInLoop' }],
+    },
+    // NEW: .connect() inside a request handler
+    {
+      code: `app.post("/mcp", (req, res) => {
+        server.connect(new SSEServerTransport("/messages", res));
+      })`,
+      errors: [{ messageId: 'connectInHandler' }],
+    },
+    // NEW: .connect() inside http.createServer
+    {
+      code: `http.createServer((req, res) => {
+        mcpServer.connect(transport);
+      })`,
+      errors: [{ messageId: 'connectInHandler' }],
     },
   ],
 });

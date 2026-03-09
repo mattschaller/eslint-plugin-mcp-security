@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import * as parser from '@typescript-eslint/parser';
 import { afterAll } from 'vitest';
-import rule from '../../../src/rules/security/no-path-traversal-in-handler.js';
+import rule from '../../../src/rules/security/no-path-traversal-in-resources.js';
 
 RuleTester.afterAll = afterAll;
 
@@ -9,7 +9,7 @@ const ruleTester = new RuleTester({
   languageOptions: { parser },
 });
 
-ruleTester.run('no-path-traversal-in-handler', rule, {
+ruleTester.run('no-path-traversal-in-resources', rule, {
   valid: [
     // Tool handler with no fs operations
     {
@@ -26,12 +26,6 @@ ruleTester.run('no-path-traversal-in-handler', rule, {
         })
       `,
     },
-    // fs in a non-.tool() method
-    {
-      code: `server.resource("file:///{path}", async (uri) => {
-        readFileSync(uri.path);
-      })`,
-    },
     // Not a method call
     {
       code: `tool("read", "Read file", async (params) => {
@@ -44,7 +38,7 @@ ruleTester.run('no-path-traversal-in-handler', rule, {
     },
   ],
   invalid: [
-    // readFileSync
+    // readFileSync in tool handler
     {
       code: `server.tool("read-file", "Read a file", async (params) => {
         const data = readFileSync(params.path, "utf-8");
@@ -154,6 +148,20 @@ ruleTester.run('no-path-traversal-in-handler', rule, {
         chmodSync(params.path, 0o755);
       })`,
       errors: [{ messageId: 'fsInHandler', data: { name: 'chmodSync' } }],
+    },
+    // NEW: readFileSync inside .resource() handler
+    {
+      code: `server.resource("file:///{path}", async (uri) => {
+        readFileSync(uri.path);
+      })`,
+      errors: [{ messageId: 'fsInHandler', data: { name: 'readFileSync' } }],
+    },
+    // NEW: writeFileSync inside .resource() handler
+    {
+      code: `server.resource("config", "config://main", async (uri) => {
+        writeFileSync("/tmp/out", "data");
+      })`,
+      errors: [{ messageId: 'fsInHandler', data: { name: 'writeFileSync' } }],
     },
   ],
 });

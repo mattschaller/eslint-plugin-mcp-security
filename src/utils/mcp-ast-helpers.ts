@@ -14,6 +14,28 @@ export function isToolMethodCall(
 }
 
 /**
+ * Check if a CallExpression is a `.resource()` method call.
+ */
+export function isResourceMethodCall(
+  node: TSESTree.CallExpression,
+): boolean {
+  return (
+    node.callee.type === AST_NODE_TYPES.MemberExpression &&
+    node.callee.property.type === AST_NODE_TYPES.Identifier &&
+    node.callee.property.name === 'resource'
+  );
+}
+
+/**
+ * Check if a CallExpression is a `.tool()` or `.resource()` method call.
+ */
+export function isToolOrResourceMethodCall(
+  node: TSESTree.CallExpression,
+): boolean {
+  return isToolMethodCall(node) || isResourceMethodCall(node);
+}
+
+/**
  * Extract the description node from a `.tool()` call.
  *
  * MCP SDK signatures:
@@ -62,7 +84,7 @@ export function getStaticStringValue(
 }
 
 /**
- * Get the handler function node from a .tool() call.
+ * Get the handler function node from a .tool() or .resource() call.
  * The handler is always the last argument.
  */
 export function getToolHandlerNode(
@@ -78,5 +100,84 @@ export function getToolHandlerNode(
     return lastArg;
   }
 
+  return null;
+}
+
+/**
+ * Alias for getToolHandlerNode — works identically since resource
+ * handlers are also the last argument.
+ */
+export const getResourceHandlerNode = getToolHandlerNode;
+
+/**
+ * Get the tool name node (first argument) from a .tool() call.
+ * Returns the node if it's a string literal or template literal.
+ */
+export function getToolNameNode(
+  node: TSESTree.CallExpression,
+): TSESTree.Literal | TSESTree.TemplateLiteral | null {
+  if (node.arguments.length < 1) return null;
+
+  const firstArg = node.arguments[0];
+
+  if (
+    firstArg.type === AST_NODE_TYPES.Literal &&
+    typeof firstArg.value === 'string'
+  ) {
+    return firstArg;
+  }
+
+  if (firstArg.type === AST_NODE_TYPES.TemplateLiteral) {
+    return firstArg;
+  }
+
+  return null;
+}
+
+/**
+ * Check if a .tool() call has a schema argument.
+ *
+ * Schema is present when:
+ * - 4+ args: name, description, schema, handler
+ * - 3 args and 2nd arg is NOT a string (it's the schema): name, schema, handler
+ */
+export function hasSchemaArgument(
+  node: TSESTree.CallExpression,
+): boolean {
+  if (node.arguments.length >= 4) return true;
+
+  if (node.arguments.length === 3) {
+    const secondArg = node.arguments[1];
+    // If 2nd arg is a string literal or template literal, it's a description, not schema
+    if (
+      (secondArg.type === AST_NODE_TYPES.Literal &&
+        typeof secondArg.value === 'string') ||
+      secondArg.type === AST_NODE_TYPES.TemplateLiteral
+    ) {
+      return false;
+    }
+    // Otherwise it's a schema (object expression, identifier reference, etc.)
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Extract the function name from a CallExpression.
+ * Handles both direct calls (exec()) and member expressions (cp.exec()).
+ */
+export function getCalleeName(node: TSESTree.CallExpression): string | null {
+  // Direct call: execSync(...)
+  if (node.callee.type === AST_NODE_TYPES.Identifier) {
+    return node.callee.name;
+  }
+  // Member expression: cp.execSync(...), child_process.spawn(...)
+  if (
+    node.callee.type === AST_NODE_TYPES.MemberExpression &&
+    node.callee.property.type === AST_NODE_TYPES.Identifier
+  ) {
+    return node.callee.property.name;
+  }
   return null;
 }

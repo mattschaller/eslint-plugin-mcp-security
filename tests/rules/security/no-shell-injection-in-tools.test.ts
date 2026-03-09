@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import * as parser from '@typescript-eslint/parser';
 import { afterAll } from 'vitest';
-import rule from '../../../src/rules/security/no-exec-with-external-input.js';
+import rule from '../../../src/rules/security/no-shell-injection-in-tools.js';
 
 RuleTester.afterAll = afterAll;
 
@@ -9,7 +9,7 @@ const ruleTester = new RuleTester({
   languageOptions: { parser },
 });
 
-ruleTester.run('no-exec-with-external-input', rule, {
+ruleTester.run('no-shell-injection-in-tools', rule, {
   valid: [
     // Tool handler with no exec calls
     {

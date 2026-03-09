@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import * as parser from '@typescript-eslint/parser';
 import { afterAll } from 'vitest';
-import rule from '../../../src/rules/security/no-credential-pattern-in-description.js';
+import rule from '../../../src/rules/security/no-credential-paths-in-descriptions.js';
 
 RuleTester.afterAll = afterAll;
 
@@ -9,7 +9,7 @@ const ruleTester = new RuleTester({
   languageOptions: { parser },
 });
 
-ruleTester.run('no-credential-pattern-in-description', rule, {
+ruleTester.run('no-credential-paths-in-descriptions', rule, {
   valid: [
     // Normal tool description — no credential references
     {

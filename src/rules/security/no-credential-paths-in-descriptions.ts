@@ -4,43 +4,12 @@ import {
   getToolDescriptionNode,
   getStaticStringValue,
 } from '../../utils/mcp-ast-helpers.js';
+import { CREDENTIAL_PATTERNS } from '../../utils/patterns.js';
 
 const createRule = ESLintUtils.RuleCreator(
   (name) =>
     `https://github.com/mattschaller/eslint-plugin-mcp-security/blob/main/docs/rules/${name}.md`,
 );
-
-const CREDENTIAL_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
-  // Credential directories
-  { pattern: /~\/\.ssh\b/, label: '~/.ssh (SSH keys)' },
-  { pattern: /~\/\.aws\b/, label: '~/.aws (AWS credentials)' },
-  { pattern: /~\/\.gnupg\b/, label: '~/.gnupg (GPG keys)' },
-  { pattern: /~\/\.config\/gcloud/, label: 'GCloud credentials' },
-  { pattern: /~\/\.azure\b/, label: '~/.azure (Azure credentials)' },
-  { pattern: /~\/\.kube\b/, label: '~/.kube (Kubernetes config)' },
-  { pattern: /~\/\.docker\/config\.json/, label: 'Docker credentials' },
-  { pattern: /~\/\.npmrc\b/, label: '~/.npmrc (npm auth tokens)' },
-
-  // Credential files by name
-  { pattern: /\.env\b/, label: '.env (environment secrets)' },
-  { pattern: /\bid_rsa\b/, label: 'SSH private key (id_rsa)' },
-  { pattern: /\bid_ed25519\b/, label: 'SSH private key (id_ed25519)' },
-  { pattern: /\bid_ecdsa\b/, label: 'SSH private key (id_ecdsa)' },
-
-  // System credential files
-  { pattern: /\/etc\/shadow\b/, label: '/etc/shadow' },
-  { pattern: /\/etc\/passwd\b/, label: '/etc/passwd' },
-
-  // Key/cert file extensions
-  { pattern: /\.pem\b/, label: 'PEM certificate/key file' },
-  { pattern: /\.p12\b/, label: 'PKCS#12 key file' },
-  { pattern: /\.pfx\b/, label: 'PFX key file' },
-  { pattern: /\.keystore\b/, label: 'Java keystore' },
-
-  // Cloud credential references
-  { pattern: /aws_access_key/i, label: 'AWS access key' },
-  { pattern: /aws_secret/i, label: 'AWS secret' },
-];
 
 type MessageIds = 'credentialPattern';
 
@@ -52,7 +21,7 @@ type Options = [
 ];
 
 export default createRule<Options, MessageIds>({
-  name: 'no-credential-pattern-in-description',
+  name: 'no-credential-paths-in-descriptions',
   meta: {
     type: 'problem',
     docs: {

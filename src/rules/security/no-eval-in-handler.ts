@@ -2,6 +2,7 @@ import { ESLintUtils, TSESTree, AST_NODE_TYPES } from '@typescript-eslint/utils'
 import {
   isToolMethodCall,
   getToolHandlerNode,
+  getCalleeName,
 } from '../../utils/mcp-ast-helpers.js';
 
 const createRule = ESLintUtils.RuleCreator(
@@ -65,19 +66,6 @@ export default createRule<Options, MessageIds>({
 
     const options = context.options[0] ?? {};
     const extraFns = new Set(options.additionalFunctions ?? []);
-
-    function getCalleeName(node: TSESTree.CallExpression): string | null {
-      if (node.callee.type === AST_NODE_TYPES.Identifier) {
-        return node.callee.name;
-      }
-      if (
-        node.callee.type === AST_NODE_TYPES.MemberExpression &&
-        node.callee.property.type === AST_NODE_TYPES.Identifier
-      ) {
-        return node.callee.property.name;
-      }
-      return null;
-    }
 
     const enterHandler = (node: TSESTree.Node): void => {
       if (toolHandlerNodes.has(node)) {

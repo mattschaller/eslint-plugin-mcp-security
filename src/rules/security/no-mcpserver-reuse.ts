@@ -18,7 +18,7 @@ const HTTP_HANDLER_METHODS = new Set([
   'createServer',
 ]);
 
-type MessageIds = 'mcpServerInLoop' | 'mcpServerInHandler';
+type MessageIds = 'mcpServerInLoop' | 'mcpServerInHandler' | 'connectInHandler';
 
 export default createRule<[], MessageIds>({
   name: 'no-mcpserver-reuse',
@@ -36,6 +36,9 @@ export default createRule<[], MessageIds>({
       mcpServerInHandler:
         'new McpServer() inside a request handler creates a new server instance per request ' +
         '(CVE-2026-25536). Instantiate McpServer once at module level and manage transports per-request instead.',
+      connectInHandler:
+        '.connect() inside a request handler re-connects the MCP server per request ' +
+        '(CVE-2026-25536). Connect once at module level and manage transports per-request instead.',
     },
     schema: [],
   },
@@ -85,6 +88,14 @@ export default createRule<[], MessageIds>({
       return false;
     }
 
+    function isConnectCall(node: TSESTree.CallExpression): boolean {
+      return (
+        node.callee.type === AST_NODE_TYPES.MemberExpression &&
+        node.callee.property.type === AST_NODE_TYPES.Identifier &&
+        node.callee.property.name === 'connect'
+      );
+    }
+
     const enterFn = (node: TSESTree.Node): void => {
       if (httpHandlerNodes.has(node)) {
         insideHttpHandler++;
@@ -105,6 +116,11 @@ export default createRule<[], MessageIds>({
           if (handler) {
             httpHandlerNodes.add(handler);
           }
+        }
+
+        // Flag .connect() calls inside HTTP handlers
+        if (insideHttpHandler > 0 && isConnectCall(node)) {
+          context.report({ node, messageId: 'connectInHandler' });
         }
       },
       NewExpression(node) {
