@@ -3,6 +3,14 @@ import noShellInjectionInTools from './rules/security/no-shell-injection-in-tool
 import noPathTraversalInResources from './rules/security/no-path-traversal-in-resources.js';
 import noEvalInHandler from './rules/security/no-eval-in-handler.js';
 import noMcpserverReuse from './rules/security/no-mcpserver-reuse.js';
+import noDuplicateToolNames from './rules/security/no-duplicate-tool-names.js';
+import requireToolInputSchema from './rules/security/require-tool-input-schema.js';
+import noDynamicToolRegistration from './rules/security/no-dynamic-tool-registration.js';
+import noHardcodedSecretsInServer from './rules/security/no-hardcoded-secrets-in-server.js';
+import noUnvalidatedToolInput from './rules/security/no-unvalidated-tool-input.js';
+import noSensitiveDataInToolResult from './rules/security/no-sensitive-data-in-tool-result.js';
+import noUnscopedToolPermissions from './rules/security/no-unscoped-tool-permissions.js';
+import requireAuthCheckInHandler from './rules/security/require-auth-check-in-handler.js';
 
 import type { TSESLint } from '@typescript-eslint/utils';
 
@@ -21,6 +29,14 @@ const plugin: Plugin = {
     'no-path-traversal-in-resources': noPathTraversalInResources,
     'no-eval-in-handler': noEvalInHandler,
     'no-mcpserver-reuse': noMcpserverReuse,
+    'no-duplicate-tool-names': noDuplicateToolNames,
+    'require-tool-input-schema': requireToolInputSchema,
+    'no-dynamic-tool-registration': noDynamicToolRegistration,
+    'no-hardcoded-secrets-in-server': noHardcodedSecretsInServer,
+    'no-unvalidated-tool-input': noUnvalidatedToolInput,
+    'no-sensitive-data-in-tool-result': noSensitiveDataInToolResult,
+    'no-unscoped-tool-permissions': noUnscopedToolPermissions,
+    'require-auth-check-in-handler': requireAuthCheckInHandler,
   },
   configs: {},
 };
@@ -35,6 +51,14 @@ plugin.configs.recommended = {
     'mcp-security/no-path-traversal-in-resources': 'error',
     'mcp-security/no-eval-in-handler': 'error',
     'mcp-security/no-mcpserver-reuse': 'error',
+    'mcp-security/no-duplicate-tool-names': 'error',
+    'mcp-security/require-tool-input-schema': 'error',
+    'mcp-security/no-dynamic-tool-registration': 'warn',
+    'mcp-security/no-hardcoded-secrets-in-server': 'error',
+    'mcp-security/no-unvalidated-tool-input': 'error',
+    'mcp-security/no-sensitive-data-in-tool-result': 'error',
+    'mcp-security/no-unscoped-tool-permissions': 'warn',
+    'mcp-security/require-auth-check-in-handler': 'warn',
   },
 };
 

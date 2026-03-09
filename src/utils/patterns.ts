@@ -90,27 +90,27 @@ export const FS_FUNCTIONS = new Set([
   'chownSync',
 ]);
 
-/** Patterns that match hardcoded secrets in string literals. */
+/** Patterns that match hardcoded secrets in string literals (applied to node.value, no quotes). */
 export const SECRET_PATTERNS: ReadonlyArray<{ pattern: RegExp; label: string }> = [
   // Generic API keys / tokens assigned in code
-  { pattern: /(?:api[_-]?key)\s*[:=]\s*['"][A-Za-z0-9\-_/.+]{8,}/i, label: 'API key' },
-  { pattern: /(?:secret[_-]?key)\s*[:=]\s*['"][A-Za-z0-9\-_/.+]{8,}/i, label: 'Secret key' },
-  { pattern: /(?:access[_-]?token)\s*[:=]\s*['"][A-Za-z0-9\-_/.+]{8,}/i, label: 'Access token' },
-  { pattern: /(?:auth[_-]?token)\s*[:=]\s*['"][A-Za-z0-9\-_/.+]{8,}/i, label: 'Auth token' },
-  { pattern: /(?:private[_-]?key)\s*[:=]\s*['"][A-Za-z0-9\-_/.+]{8,}/i, label: 'Private key' },
+  { pattern: /(?:api[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9\-_/.+]{8,}/i, label: 'API key' },
+  { pattern: /(?:secret[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9\-_/.+]{8,}/i, label: 'Secret key' },
+  { pattern: /(?:access[_-]?token)\s*[:=]\s*['"]?[A-Za-z0-9\-_/.+]{8,}/i, label: 'Access token' },
+  { pattern: /(?:auth[_-]?token)\s*[:=]\s*['"]?[A-Za-z0-9\-_/.+]{8,}/i, label: 'Auth token' },
+  { pattern: /(?:private[_-]?key)\s*[:=]\s*['"]?[A-Za-z0-9\-_/.+]{8,}/i, label: 'Private key' },
 
-  // Provider-specific key prefixes
-  { pattern: /['"]sk-[A-Za-z0-9]{20,}['"]/, label: 'OpenAI/Stripe secret key' },
-  { pattern: /['"]ghp_[A-Za-z0-9]{36,}['"]/, label: 'GitHub personal access token' },
-  { pattern: /['"]gho_[A-Za-z0-9]{36,}['"]/, label: 'GitHub OAuth token' },
-  { pattern: /['"]AKIA[A-Z0-9]{16}['"]/, label: 'AWS access key ID' },
-  { pattern: /['"]xox[bporas]-[A-Za-z0-9\-]{10,}['"]/, label: 'Slack token' },
+  // Provider-specific key prefixes (matched against string value, no surrounding quotes)
+  { pattern: /^sk-[A-Za-z0-9]{20,}$/, label: 'OpenAI/Stripe secret key' },
+  { pattern: /^ghp_[A-Za-z0-9]{36,}$/, label: 'GitHub personal access token' },
+  { pattern: /^gho_[A-Za-z0-9]{36,}$/, label: 'GitHub OAuth token' },
+  { pattern: /^AKIA[A-Z0-9]{16}$/, label: 'AWS access key ID' },
+  { pattern: /^xox[bporas]-[A-Za-z0-9\-]{10,}$/, label: 'Slack token' },
 
   // Bearer tokens in headers
-  { pattern: /['"]Bearer\s+[A-Za-z0-9\-_/.+]{20,}['"]/, label: 'Bearer token' },
+  { pattern: /^Bearer\s+[A-Za-z0-9\-_/.+]{20,}$/, label: 'Bearer token' },
 
   // Connection strings with credentials
-  { pattern: /['"](?:mongodb|postgres|mysql|redis):\/\/[^'"]*:[^'"]*@/i, label: 'Database connection string with credentials' },
+  { pattern: /^(?:mongodb|postgres|mysql|redis):\/\/[^:]+:.+@/i, label: 'Database connection string with credentials' },
 ];
 
 /** Auth-related identifiers for heuristic auth-check detection. */
