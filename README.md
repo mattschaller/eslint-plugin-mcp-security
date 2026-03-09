@@ -40,6 +40,14 @@ export default [
 
 All 13 rules enabled. Critical rules at `error`, heuristic rules at `warn`.
 
+## Uninstall
+
+```bash
+npm uninstall eslint-plugin-mcp-security
+```
+
+Then remove `mcpSecurity.configs.recommended` from your `eslint.config.js`.
+
 ## What it catches
 
 ### SANDWORM_MODE / McpInject patterns

@@ -1,6 +1,6 @@
 {
   "name": "eslint-plugin-mcp-security",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "description": "ESLint security rules for Model Context Protocol (MCP) servers — catches SANDWORM_MODE credential harvesting, path traversal, command injection, and CVE patterns at dev time",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "prepublishOnly": "npm run build && npm run test"
   },
@@ -45,8 +46,10 @@
     "@typescript-eslint/utils": "^8.0.0"
   },
   "devDependencies": {
+    "@types/node": "^25.3.5",
     "@typescript-eslint/parser": "^8.0.0",
     "@typescript-eslint/rule-tester": "^8.0.0",
+    "@vitest/coverage-v8": "^3.2.4",
     "eslint": "^9.0.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"

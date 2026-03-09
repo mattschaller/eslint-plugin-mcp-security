@@ -12,7 +12,11 @@ import noSensitiveDataInToolResult from './rules/security/no-sensitive-data-in-t
 import noUnscopedToolPermissions from './rules/security/no-unscoped-tool-permissions.js';
 import requireAuthCheckInHandler from './rules/security/require-auth-check-in-handler.js';
 
+import { createRequire } from 'node:module';
 import type { TSESLint } from '@typescript-eslint/utils';
+
+const require = createRequire(import.meta.url);
+const { version } = require('../package.json') as { version: string };
 
 type Plugin = TSESLint.FlatConfig.Plugin & {
   configs: Record<string, TSESLint.FlatConfig.Config>;
@@ -21,7 +25,7 @@ type Plugin = TSESLint.FlatConfig.Plugin & {
 const plugin: Plugin = {
   meta: {
     name: 'eslint-plugin-mcp-security',
-    version: '0.2.0',
+    version,
   },
   rules: {
     'no-credential-paths-in-descriptions': noCredentialPathsInDescriptions,
