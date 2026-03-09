@@ -1,5 +1,7 @@
 # eslint-plugin-mcp
 
+[![CI](https://github.com/mattschaller/eslint-plugin-mcp/actions/workflows/ci.yml/badge.svg)](https://github.com/mattschaller/eslint-plugin-mcp/actions/workflows/ci.yml)
+
 ESLint rules for Model Context Protocol servers. Security, correctness, and best practices — like `eslint-plugin-react` for the MCP ecosystem.
 
 v1 focuses on security: catches the credential-harvesting patterns deployed by [SANDWORM_MODE/McpInject](https://socket.dev/blog/sandworm-mode), path traversal (CWE-22), command injection (CWE-78), and the CVE-2025-6514 / CVE-2026-25536 patterns that runtime Zod validation alone cannot prevent. Correctness and best-practice rules are on the roadmap.
