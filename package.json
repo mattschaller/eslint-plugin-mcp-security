@@ -1,7 +1,7 @@
 {
   "name": "eslint-plugin-mcp",
   "version": "0.1.0",
-  "description": "ESLint plugin for Model Context Protocol (MCP) server security — catches SANDWORM_MODE credential harvesting, path traversal, command injection, and CVE patterns at dev time",
+  "description": "ESLint rules for Model Context Protocol (MCP) servers — security, correctness, and best practices",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "type": "module",
