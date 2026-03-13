@@ -174,6 +174,10 @@ Honesty matters in security tooling:
 - **Doesn't validate Zod schemas for correctness.** It checks that a schema exists, not that it's restrictive enough.
 - **Doesn't require TypeScript type information.** Rules use AST pattern matching on call expressions, so they work in both JS and TS files without `@typescript-eslint/parser`.
 
+## See also
+
+Pair with [mcp-policy](https://github.com/mattschaller/mcp-policy) to enforce an allowlist at the config layer — catches unauthorized MCP servers in CI before they ever run.
+
 ## Prior art and references
 
 - [OWASP MCP Top 10](https://owasp.org/www-project-mcp-top-10/) — security risk framework for MCP systems
