@@ -42,17 +42,15 @@
   "peerDependencies": {
     "eslint": ">=9.0.0"
   },
-  "dependencies": {
-    "@typescript-eslint/utils": "^8.0.0"
-  },
   "devDependencies": {
-    "@types/node": "^25.3.5",
-    "@typescript-eslint/parser": "^8.0.0",
-    "@typescript-eslint/rule-tester": "^8.0.0",
-    "@vitest/coverage-v8": "^3.2.4",
-    "eslint": "^9.0.0",
+    "@types/node": "^25.5.0",
+    "@typescript-eslint/parser": "^8.57.0",
+    "@typescript-eslint/rule-tester": "^8.57.0",
+    "@typescript-eslint/utils": "^8.57.0",
+    "@vitest/coverage-v8": "^4.1.0",
+    "eslint": "^10.0.3",
     "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "vitest": "^4.1.0"
   },
   "engines": {
     "node": ">=20.0.0"
